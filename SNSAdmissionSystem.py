@@ -1,7 +1,3 @@
-"""
-SNS Admission System
-"""
-
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import random
@@ -31,7 +27,7 @@ class SchoolAdmissionsApp:
         self.background_label.place(relx=0.5, rely=1, anchor="s")
 
         self.num_students_var = tk.StringVar()
-        self.age_range_var = tk.StringVar(value="3-4")
+        self.age_range_var = tk.StringVar(value="3-4.5")
 
         self.create_widgets()
         
@@ -63,12 +59,6 @@ class SchoolAdmissionsApp:
         self.age_range_entry = tk.Entry(frame, textvariable=self.age_range_var)
         self.age_range_entry.pack(side="left")
 
-    # def create_input_buttons(self, frame):
-    #     button_texts = ["Set Inputs", "Load Excel File", "Select Students"]
-    #     button_commands = [self.set_inputs, self.load_excel_file, self.select_students]
-
-    #     for text, command in zip(button_texts, button_commands):
-    #         tk.Button(frame, text=text, command=command).pack(side="left", padx=10)
     def create_input_buttons(self, frame):
         button_texts = ["Set Inputs", "Load Excel File", "Select Students", "Display Total Students"]
         button_commands = [self.set_inputs, self.load_excel_file, self.select_students, self.display_total_students]
@@ -86,14 +76,15 @@ class SchoolAdmissionsApp:
     def set_inputs(self):
         try:
             num_students = int(self.num_students_var.get())
-            age_range = tuple(map(int, self.age_range_var.get().split('-')))
+            min_age, max_age = map(float, self.age_range_var.get().split('-'))
 
-            if num_students <= 0 or age_range[0] >= age_range[1]:
+            if num_students <= 0 or min_age >= max_age:
                 raise ValueError
 
             messagebox.showinfo("Inputs Set", "Inputs have been set successfully")
         except ValueError:
             messagebox.showerror("Error", "Please enter valid inputs")
+
 
     def load_excel_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx")])
@@ -111,15 +102,12 @@ class SchoolAdmissionsApp:
 
         try:
             num_students = int(self.num_students_var.get())
-            age_range = tuple(map(int, self.age_range_var.get().split('-')))
-            self.selected_students = self.process_data(self.df, num_students, age_range)
+            min_age, max_age = map(float, self.age_range_var.get().split('-'))
+            self.selected_students = self.process_data(self.df, num_students, (min_age, max_age))
             self.display_selected_students()
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
 
-# =============================================================================
-# The below code is to randomly select a Male or Female Student if the input number is Odd
-# =============================================================================
     def process_data(self, dataframe, num_students, age_range):
         boys = dataframe[dataframe['Gender'] == 'Male']
         girls = dataframe[dataframe['Gender'] == 'Female']
@@ -130,27 +118,19 @@ class SchoolAdmissionsApp:
         selected_boys = boys.sample(min(boys_count, len(boys)), replace=False).reset_index(drop=True)
         selected_girls = girls.sample(min(girls_count, len(girls)), replace=False).reset_index(drop=True)
 
-        selected_ages = random.choices(range(age_range[0], age_range[1] + 1), k=num_students)
-
+        selected_ages = [round(random.uniform(age_range[0], age_range[1]), 1) for _ in range(num_students)]
+        
         selected_students = pd.concat([selected_boys, selected_girls], ignore_index=True)
         selected_students['Age'] = selected_ages
 
-    # If the total number of students is odd, randomly select one gender to add an extra student
         if num_students % 2 == 1:
             extra_student_gender = random.choice(['Male', 'Female'])
-            extra_student_age = random.randint(age_range[0], age_range[1])
+            extra_student_age = round(random.uniform(age_range[0], age_range[1]), 1)
             extra_student = pd.DataFrame({'Gender': [extra_student_gender], 'Age': [extra_student_age]})
             selected_students = pd.concat([selected_students, extra_student], ignore_index=True)
 
         return selected_students
 
-    # def display_selected_students(self):
-    #     results_window = tk.Toplevel(self.root)
-    #     results_window.title("Selected Students Results")
-
-    #     self.create_results_label(results_window)
-    #     self.create_results_text(results_window)
-    #     self.create_save_buttons(results_window)
     def display_selected_students(self):
         results_window = tk.Toplevel(self.root)
         results_window.title("Selected Students Results")
@@ -177,16 +157,12 @@ class SchoolAdmissionsApp:
         results_text.pack()
         results_text.config(state=tk.NORMAL)
     
-    # Display total number of students
         results_text.insert(tk.END, f"Details of {len(self.selected_students)} Students:\n\n ")
     
-    # Display selected students
         results_text.insert(tk.END, self.selected_students.to_string(index=False))
         results_text.config(state=tk.DISABLED)
 
     def create_save_buttons(self, window):
-        # file_formats = [("CSV files", "*.csv"), ("Excel files", "*.xlsx")]
-
         save_buttons = [
             ("Save as CSV", self.save_csv, ".csv"),
             ("Save as Excel", self.save_excel, ".xlsx")
@@ -217,4 +193,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
