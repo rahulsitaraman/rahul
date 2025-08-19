@@ -1,24 +1,32 @@
 // pages/index.js
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/router";
+import { useEffect } from "react";
+import styles from '../styles/Home.module.css';
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-  if (session) {
-    return (
-      <main style={{ padding: '2rem' }}>
-        <h1>Welcome, {session.user.name}</h1>
-        <p>Email: {session.user.email}</p>
-        <button onClick={() => signOut()}>Sign out</button>
-      </main>
-    );
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push('/tutor');
+    }
+  }, [status, router]);
+
+  if (status === "loading" || status === "authenticated") {
+    return <div className={styles.loading}>Loading...</div>;
   }
 
   return (
-    <main style={{ padding: '2rem' }}>
-      <h1>AI Tutor Login</h1>
-      <p>Please sign in to access the AI Tutor.</p>
-      <button onClick={() => signIn()}>Sign in</button>
+    <main className={styles.main}>
+      <div className={styles.loginBox}>
+        <h1 className={styles.title}>Welcome to the AI Tutor</h1>
+        <p className={styles.subtitle}>Sign in to begin your personalized learning journey.</p>
+        <button onClick={() => signIn()} className={styles.signInButton}>
+          Sign In
+        </button>
+      </div>
     </main>
   );
 }
